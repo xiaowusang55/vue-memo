@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    
+    <div id="app-3">
+        <span v-if="seen">Now you see me</span><br>
+        <button v-on:click="showOrHide">toggle</button>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+    
+        let app3 = new Vue({
+            el: '#app-3',
+            data: {
+                seen: true
+            },
+            methods: {
+                showOrHide() {
+                    this.$data.seen = !this.$data.seen;
+                }
+            }
+        })
+    
+    /*
+    This example demonstrates that we can bind data to not only text and attributes, but also the structure of the DOM. 
+    Moreover, Vue also provides a powerful transition effect system that can automatically apply transition effects when
+    elements are inserted/updated/removed by Vue.
+    
+    
+    */
+
+
+
+    </script>
+
+
+
+</body>
+</html>
