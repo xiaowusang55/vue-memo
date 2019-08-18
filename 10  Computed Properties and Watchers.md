@@ -161,3 +161,73 @@ Now when you run `vm.fullName = 'John Doe'`, the setter will be invoked and `vm.
 ## Watchers
 
 While computed properties are more appropriate in most cases, there are times when a custom watcher is necessary. That’s why Vue provides a more generic way to react to data changes through the watch option. This is most useful when you want to perform **asynchronous** or **expensive operations** in response to changing data.
+
+for example:
+
+```js
+    <div id="watch-example">
+        <p>
+            Ask a yes/no question:
+        <input v-model="question">
+        </p>
+        <p>{{ answer }}</p>
+    </div>
+```
+
+```html
+    <!-- Since there is already a rich ecosystem of ajax libraries -->
+    <!-- and collections of general-purpose utility methods, Vue core -->
+    <!-- is able to remain small by not reinventing them. This also   -->
+    <!-- gives you the freedom to use what you're familiar with.      -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
+    <script>
+    var watchExampleVM = new Vue({
+        el: '#watch-example',
+        data: {
+          question: '',
+          answer: 'I cannot give you an answer until you ask a question!'
+        },
+        watch: {
+          // whenever question changes, this function will run
+          question: function (newQuestion, oldQuestion) {
+            this.answer = 'Waiting for you to stop typing...'
+            this.debouncedGetAnswer()
+          }
+        },
+        created: function () {
+          // _.debounce is a function provided by lodash to limit how
+          // often a particularly expensive operation can be run.
+          // In this case, we want to limit how often we access
+          // yesno.wtf/api, waiting until the user has completely
+          // finished typing before making the ajax request. To learn
+          // more about the _.debounce function (and its cousin
+          // _.throttle), visit: https://lodash.com/docs#debounce
+          this.debouncedGetAnswer = _.debounce(this.getAnswer, 500)
+        },
+        methods: {
+          getAnswer: function () {
+            if (this.question.indexOf('?') === -1) {
+              this.answer = 'Questions usually contain a question mark. ;-)'
+              return
+            }
+            this.answer = 'Thinking...'
+            var vm = this
+            axios.get('https://yesno.wtf/api')
+              .then(function (response) {
+                vm.answer = _.capitalize(response.data.answer)
+              })
+              .catch(function (error) {
+                vm.answer = 'Error! Could not reach the API. ' + error
+              })
+          }
+        }
+    })
+    </script>
+```
+
+demo-result(<https://jsfiddle.net/xiaowusang/8cLqyx5s/12/>)
+
+>In this case, using the `watch` option allows us to perform an asynchronous operation (accessing an API), limit how often we perform that operation, and set intermediary states until we get a final answer. None of that would be possible with a computed property.
+
+In addition to the `watch` option, you can also use the imperative **vm.$watch API**.
