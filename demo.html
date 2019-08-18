@@ -1,43 +1,55 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
 </head>
+
 <body>
-    
-    <div class="app"></div>
+
+    <div id="demo">{{ fullName }}</div>
 
 
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script>
-        
-        let data = {
-            name: "xiaoming",
-            age: 20,
-            ele: 'jajaj'
-        }
-
         let vm = new Vue({
-            el: '.app',
-            data: data,
+            el: '#demo',
+            data: {
+                firstName: 'foo',
+                lastName: 'Bar',
+                msg: 'haha'
+            },
+            computed: {
+                fullName: {
+                    //getter
+                    get: function () {
+                        return this.firstName + ' ' + this.lastName
+                    },
+                    //setter
+                    set: function (newValue) {
+                        let names = newValue.split(' ');
+                        this.firstName = names[0];
+                        this.lastName = names[names.length - 1];
+                    }
+                }
+            }
         })
 
-        console.log(vm);
+        vm.fullName = "Bob Smith";
+        console.log(vm.fullName);
+        console.log(vm.$options.computed);
 
-        console.log(vm.$el);
-        console.log(vm.data);
-        console.log(vm.$watch);
-
-    /*
-    
-    
-    */
+        /*
+        
+        
+        */
     </script>
 
 
 
 </body>
+
 </html>
