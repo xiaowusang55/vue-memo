@@ -299,3 +299,147 @@ In situations where computed properties are not feasible (e.g. inside nested `v-
     }
 ```
 
+## `v-for` with a Range
+
+```html
+    <div>
+        <span v-for="n in 10">{{ n }}</span>
+    </div>
+```
+
+result: <https://jsfiddle.net/xiaowusang/9qygt0ed/10/>
+
+## `v-for` on a `<template>`
+
+Similar to template `v-if`, you can also use a `<template>` tag with `v-for` to render a block of multiple elements. For example:
+
+```html
+    <ul>
+        <template v-for="item in items">
+            <li>{{ item.msg }}</li>
+            <li class="divider" role="presentation"></li>
+        </template>
+    </ul>
+```
+
+result: <https://jsfiddle.net/xiaowusang/9qygt0ed/14/>
+
+## `v-for` with `v-if`
+
+>**Note that it’s not recommended to use v-if and v-for together. Refer to style guide for details**.
+
+When they exist on the same node, `v-for` has a higher priority than v-if. That means the `v-if` will be run on each iteration of the loop separately. This can be useful when you want to render nodes for only some items, like below:
+
+```html
+    <li v-for="todo in todos" v-if="!todo.isComplete">
+        {{ todo }}
+    </li>
+```
+
+The above only renders the todos that are not complete.
+
+If instead, your intent is to conditionally skip execution of the loop, you can place the `v-if` on a wrapper element (or `<template>`). For example:
+
+```html
+    <ul v-if="todos.length">
+        <li v-for="todo in todos">
+            {{ todo }}
+        </li>
+    </ul>
+    <p v-else>No todos left!</p>
+```
+
+result: <https://jsfiddle.net/xiaowusang/9qygt0ed/19/>
+
+## `v-for` with a Component
+
+You can directly use v-for on a custom component, like any normal element:
+
+```html
+    <my-component v-for="item in items" :key="item.id"></my-component>
+```
+
+>**when using v-for with a component, a key is now required.**
+
+However, this won’t automatically pass any data to the component, because components have isolated scopes of their own. In order to pass the iterated data into the component, we should also use props:
+
+```html
+    <my-component
+        v-for="(item, index) in items"
+        v-bind:item="item"
+        v-bind:index="index"
+        v-bind:key="item.id"
+    ></my-component>
+```
+
+The reason for not automatically injecting item into the component is because that makes the component tightly coupled to how v-for works. Being explicit about where its data comes from makes the component reusable in other situations.
+
+Here’s a complete example of a simple todo list:
+
+```html
+    <div id="todo-list-example">
+        <form v-on:submit.prevent="addNewToDo">
+            <label for="new-todo"></label>
+            <input
+                v-model="newTodoText"
+                id="new-todo"
+                placeholder="E.g. Feed the cat"
+            >
+            <button>Add</button>
+        </form>
+        <ul
+            is="todo-item"
+            v-for="(todo, index) in todos"
+            v-bind:key="todo.id"
+            v-bind:title="todo.title"
+            v-on:remove="todos.splice(index, 1)"
+        ></ul>
+    </div>
+```
+
+>Note the `is="todo-item"` attribute. This is necessary in DOM templates, because only an `<li>`element is valid inside a `<ul>`. It does the same thing as `<todo-item>`, but works around a potential browser parsing error. See DOM Template Parsing Caveats to learn more.
+
+```js
+    Vue.component('todo-item', {
+        template: `
+            <li>
+                {{ title }}
+                <button v-on:click="$emit('remove')">Remove</button>
+            </li>
+        `,
+        props: ['title']
+    })
+
+    new Vue({
+        el: '#todo-list-example',
+        data: {
+            newTodoText: '',
+            todos: [
+                {
+                  id: 1,
+                  title: 'Do the dishes',
+                },
+                {
+                  id: 2,
+                  title: 'Take out the trash',
+                },
+                {
+                  id: 3,
+                  title: 'Mow the lawn'
+                }
+          ],
+          nextTodoId: 4
+        },
+        methods: {
+            addNewTodo: function () {
+                this.todos.push({
+                    id: this.nextTodoId++,
+                    title: this.newTodoText
+            })
+            this.newTodoText = ''
+          }
+        }
+    })
+```
+
+result: <https://jsfiddle.net/xiaowusang/9qygt0ed/24/>
