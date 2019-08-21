@@ -302,3 +302,64 @@ Or, if the event handler is a method:
 
 Then the value will be passed as the first parameter of that method:
 
+```js
+methods: {
+    onEnlargeText: function (enlargeAmount) {
+    this.postFontSize += enlargeAmount
+  }
+}
+```
+
+### Using `v-model` on Components
+
+Custom events can also be used to create custom inputs that work with `v-model`. Remember that:
+
+```html
+<input v-model="searchText">
+```
+
+does the same thing as:
+
+```html
+<input
+    v-bind:value="searchText"
+    v-on:input="searchText = $event.target.value"
+></input>
+```
+
+When used on a component, v-model instead does this:
+
+```html
+<custom-input
+    v-bind:value="searchText"
+    v-on:input="searchText = $event"
+></custom-input>
+```
+
+For this to actually work though, the `<input>` inside the component must:
+
+* Bind the `value` attribute to a `value` prop
+* On `input`, emit its own custom `input` event with the new value
+
+Here’s that in action:
+
+```js
+Vue.component('custom-input', {
+    props: ['value'],
+    template: `
+        <input
+            v-bind:value="value"
+            v-on:input="$emit('input', $event.target.value)"
+        >
+    `
+})
+```
+
+Now `v-model` should work perfectly with this component:
+
+```html
+<custom-input v-model="searchText"></custom-input>
+```
+
+That’s all you need to know about custom component events for now, but once you’ve finished reading this page and feel comfortable with its content, we recommend coming back later to read the full guide on Custom Events.
+
