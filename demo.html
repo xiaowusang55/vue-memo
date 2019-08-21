@@ -11,54 +11,41 @@
 <body>
 
     <div class="app">
-        <input type="text" 
-            v-on:input="searchText = $event.target.value"
-            v-bind:value = "searchText"
-        >
-        <custom-input
-            v-on:myclick="searchText = $event"
-            v-bind:valuec = "searchText"
-        ></custom-input>
+        <h1>{{username}}</h1>
+        <base-input v-model="username" placeholder="Enter your usersdfname"  disabled></base-input>
     </div>
+
 
 
     <script src="https://cdn.jsdelivr.net/npm/axios@0.12.0/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/lodash@4.13.1/lodash.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
     <script>
-        Vue.component('custom-input', {
-            props: ['valuec'],
-            data() {
-                return {
-                    msg: ""
-                }
-            },
+        Vue.component('base-input', {
+            inheritAttrs: false,
+            props: ['label', 'value'],
             template: `
-            <div>
-                <input type="text"
-                    v-bind:value = "valuec" 
-                    v-on:input = "$emit('myclick', $event.target.value)"
-                >
-            </div>
-            `
-
+                <label>
+                  {{ label }}
+                  <input    
+                    v-bind:value="value"
+                    v-on:input="$emit('input', $event.target.value)"
+                  >
+                  <a>{{  }}</a>
+                </label>
+            `,
         })
 
-        new Vue({
+        let vm = new Vue({
+
             el: '.app',
             data: {
-                searchText: ''
-            },
-            methods: {
-                myFuc(e) {
-                    console.log(e);
-                    
-                }
-            },
+                username: '',
+                sdfsfsfs:'haha'
+            }
         })
 
-
-
+        console.log(vm);
 
         /*
         

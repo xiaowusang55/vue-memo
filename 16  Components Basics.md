@@ -363,3 +363,173 @@ Now `v-model` should work perfectly with this component:
 
 That’s all you need to know about custom component events for now, but once you’ve finished reading this page and feel comfortable with its content, we recommend coming back later to read the full guide on Custom Events.
 
+## Content Distribution with Slots
+
+Just like with HTML elements, it’s often useful to be able to pass content to a component, like this:
+
+```html
+<alert-box>
+    Something bad happend.
+</alert-box>
+```
+
+Which might render something like:
+
+>Error! Something bad happend.
+
+Fortunately, this task is made very simple by Vue’s custom `<slot>` element:
+
+```js
+Vue.component('alert-box', {
+  template: `
+    <div class="demo-alert-box">
+      <strong>Error!</strong>
+      <slot></slot>
+    </div>
+  `
+})
+```
+
+As you’ll see above, we just add the slot where we want it to go – and that’s it. We’re done!
+
+That’s all you need to know about slots for now, but once you’ve finished reading this page and feel comfortable with its content, we recommend coming back later to read the full guide on Slots.
+
+## Dynamic Components
+
+Sometimes, it’s useful to dynamically switch between components, like in a tabbed interface:
+
+```html
+<script src="https://unpkg.com/vue"></script>
+
+<div id="dynamic-component-demo" class="demo">
+  <button
+    v-for="tab in tabs"
+    v-bind:key="tab"
+    v-bind:class="['tab-button', { active: currentTab === tab }]"
+    v-on:click="currentTab = tab"
+  >{{ tab }}</button>
+
+  <component
+    v-bind:is="currentTabComponent"
+    class="tab"
+  ></component>
+</div>
+```
+
+```js
+Vue.component('tab-home', {
+    template: '<div>Home component</div>'
+})
+Vue.component('tab-posts', {
+    template: '<div>Posts component</div>'
+})
+Vue.component('tab-archive', {
+    template: '<div>Archive component</div>'
+})
+
+new Vue({
+  el: '#dynamic-component-demo',
+  data: {
+    currentTab: 'Home',
+    tabs: ['Home', 'Posts', 'Archive']
+  },
+  computed: {
+    currentTabComponent: function () {
+      return 'tab-' + this.currentTab.toLowerCase()
+    }
+  }
+})
+```
+
+```html
+<script src="https://unpkg.com/vue"></script>
+
+<div id="dynamic-component-demo" class="demo">
+  <button
+    v-for="tab in tabs"
+    v-bind:key="tab.name"
+    v-bind:class="['tab-button', { active: currentTab.name === tab.name }]"
+    v-on:click="currentTab = tab"
+  >{{ tab.name }}</button>
+
+  <component
+    v-bind:is="currentTab.component"
+    class="tab"
+  ></component>
+</div>
+```
+
+```js
+var tabs = [
+  {
+    name: 'Home',
+    component: {
+      template: '<div>Home component</div>'
+    }
+  },
+  {
+    name: 'Posts',
+    component: {
+      template: '<div>Posts component</div>'
+    }
+  },
+  {
+    name: 'Archive',
+    component: {
+      template: '<div>Archive component</div>',
+    }
+  }
+]
+
+new Vue({
+  el: '#dynamic-component-demo',
+  data: {
+    tabs: tabs,
+    currentTab: tabs[0]
+  }
+})
+```
+
+The above is made possible by Vue’s `<component> `element with the is special attribute:
+
+```html
+<!-- Component changes when currentTabComponent changes -->
+<component v-bind:is="currentTabComponent"></component>
+```
+
+In the example above, `currentTabComponent` can contain either:
+
+* the name of a registered component, or
+* a component’s options object
+
+That’s all you need to know about dynamic components for now, but once you’ve finished reading this page and feel comfortable with its content, we recommend coming back later to read the full guide on **Dynamic & Async Components**.
+
+## DOM Template Parsing Caveats
+
+Some HTML elements, such as `<ul>`, `<ol>`, `<table>` and `<select>` have restrictions on what elements can appear inside them, and some elements such as `<li>`, `<tr>`, and `<option>` can only appear inside certain other elements.
+
+This will lead to issues when using components with elements that have such restrictions. For example:
+
+```html
+<table>
+  <blog-post-row></blog-post-row>
+</table>
+```
+
+The custom component `<blog-post-row> `will be hoisted out as invalid content, causing errors in the eventual rendered output. Fortunately, the `is` special attribute offers a workaround:
+
+```html
+<table>
+  <tr is="blog-post-row"></tr>
+</table>
+```
+
+It should be noted that **this limitation does not apply if you are using string templates from one of the following sources**:
+
+* String templates (e.g. `template: '...'`)
+* Single-file (`.vue`) components
+* `<script type="text/x-template">`
+
+That’s all you need to know about DOM template parsing caveats for now – and actually, the end of Vue’s Essentials. Congratulations! There’s still more to learn, but first, we recommend taking a break to play with Vue yourself and build something fun.
+
+Once you feel comfortable with the knowledge you’ve just digested, we recommend coming back to read the full guide on **Dynamic & Async Components**, as well as the other pages in the Components In-Depth section of the sidebar.
