@@ -11,10 +11,16 @@
 <body>
 
     <div class="app">
-        <input type="text" 
+        <!-- <input type="text" 
             v-on:input="searchText = $event.target.value"
             v-bind:value = "searchText"
+        > -->
+        <h1>Input:text</h1>
+        <label for="">Dom display:</label><br>
+        <input type="text" 
+            v-model="searchText"
         >
+        <hr>
         <custom-input
             v-on:myclick="searchText = $event"
             v-bind:valuec = "searchText"
@@ -35,6 +41,7 @@
             },
             template: `
             <div>
+                <label>Input within component:</label><br>
                 <input type="text"
                     v-bind:value = "valuec" 
                     v-on:input = "$emit('myclick', $event.target.value)"

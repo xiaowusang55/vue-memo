@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+
+    <div id="app">
+        <h1>Input:radio</h1>
+        <base-radiobox v-model="lovingVue"></base-radiobox>
+    </div>
+
+    
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+        Vue.component('base-radiobox', {
+            model: {
+                prop: 'checked',
+                event: 'changedfsf'
+            },
+            props: {
+                checked: Boolean
+            },
+            template: `
+                <div>
+                    <label for="ctmEvent">Radio within component: </label>
+                    <input
+                        id="ctmEvent"
+                        type="radio"
+                        name="same"
+                        v-bind:checked="checked"
+                        v-on:change="$emit('changedfsf', $event.target.checked)"
+                    ><br>
+
+                    <label for="ctmEvent1">Radio within component: </label>
+                    <input
+                        id="ctmEvent1"
+                        type="radio"
+                        name="same"
+                        v-bind:checked="checked"
+                        v-on:change="$emit('changedfsf', $event.target.checked)"
+                    >
+                </div>
+            `
+        })
+
+
+
+        new Vue({
+            el: '#app',
+            data: {
+                lovingVue: ''
+            }
+        })
+    </script>
+
+</body>
+
+</html>
