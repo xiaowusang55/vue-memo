@@ -13,7 +13,9 @@
 
     <div id="app">
         <h1>Input:radio</h1>
-        <base-radiobox v-model="lovingVue"></base-radiobox>
+        <base-radiobox v-model="value"></base-radiobox>
+        <h1>{{ value }}</h1>
+        <base-radiobox v-model="value"></base-radiobox>
     </div>
 
     
@@ -24,11 +26,11 @@
     <script>
         Vue.component('base-radiobox', {
             model: {
-                prop: 'checked',
+                prop: 'value',
                 event: 'changedfsf'
             },
             props: {
-                checked: Boolean
+                value: String
             },
             template: `
                 <div>
@@ -37,17 +39,8 @@
                         id="ctmEvent"
                         type="radio"
                         name="same"
-                        v-bind:checked="checked"
-                        v-on:change="$emit('changedfsf', $event.target.checked)"
-                    ><br>
-
-                    <label for="ctmEvent1">Radio within component: </label>
-                    <input
-                        id="ctmEvent1"
-                        type="radio"
-                        name="same"
-                        v-bind:checked="checked"
-                        v-on:change="$emit('changedfsf', $event.target.checked)"
+                        v-bind:checked="value"
+                        v-on:change="$emit('changedfsf', $event.target.value)"
                     >
                 </div>
             `
@@ -58,7 +51,7 @@
         new Vue({
             el: '#app',
             data: {
-                lovingVue: ''
+                value: ''
             }
         })
     </script>
