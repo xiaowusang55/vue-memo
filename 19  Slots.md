@@ -266,3 +266,290 @@ In this example, we’ve chosen to name the object containing all our slot props
 
 ## Abbreviated Syntax for Lone Default Slots
 
+In cases like above, when only the default slot is provided content, the component’s tags can be used as the slot’s template. This allows us to use `v-slot` directly on the component:
+
+```html
+<current-user v-slot:default="slotProps">
+  {{ slotProps.user.firstName }}
+</current-user>
+```
+
+This can be shortened even further. Just as non-specified content is assumed to be for the default slot, `v-slot` without an argument is assumed to refer to the default slot:
+
+```html
+<current-user v-slot="slotProps">
+  {{ slotProps.user.firstName }}
+</current-user>
+```
+
+Note that the abbreviated syntax for default slot **cannot** be mixed with named slots, as it would lead to scope ambiguity:
+
+```html
+<!-- INVALID, will result in warning -->
+<current-user v-slot="slotProps">
+  {{ slotProps.user.firstName }}
+  <template v-slot:other="otherSlotProps">
+    slotProps is NOT available here
+  </template>
+</current-user>
+```
+
+Whenever there are multiple slots, use the full `<template>` based syntax for all slots:
+
+```html
+<current-user>
+  <template v-slot:default="slotProps">
+    {{ slotProps.user.firstName }}
+  </template>
+
+  <template v-slot:other="otherSlotProps">
+    ...
+  </template>
+</current-user>
+```
+
+## Destructuring Slot Props
+
+Internally, scoped slots work by wrapping your slot content in a function passed a single argument:
+
+```js
+function (slotProps) {
+  //....slot content....
+}
+```
+
+That means the value of `v-slot` can actually accept any valid JavaScript expression that can appear in the argument position of a function definition. So in supported environments (single-file components or modern browsers), you can also use ES2015 destructuring to pull out specific slot props, like so:
+
+```html
+<current-user v-slot="{ user }">
+  {{ user.firstName }}
+</current-user>
+```
+
+This can make the template much cleaner, especially when the slot provides many props. It also opens other possibilities, such as renaming props, e.g. `user` to `person`:
+
+```html
+<current-user v-slot="{ user: person }">
+  {{ person.firstName }}
+</current-user>
+```
+
+You can even define fallbacks, to be used in case a slot prop is undefined:
+
+```html
+<current-user v-slot="{ user = { firstName: 'Guest' } }">
+  {{ user.firstName }}
+</current-user>
+```
+
+## Dynamic Slot Names
+
+New in 2.6.0+
+
+Dynamic directive arguments also work on `v-slot`, allowing the definition of dynamic slot names:
+
+```html
+<base-layout>
+  <template v-slot:[dynamicSlotName]>
+    ...
+  </template>
+</base-layout>
+```
+
+## Named Slots Shorthand
+
+Similar to `v-on` and `v-bind`, `v-slot` also has a shorthand, replacing everything before the argument (`v-slot`:) with the special symbol `#`. For example, `v-slot:header` can be rewritten as `#header`:
+
+```html
+<base-layout>
+  <template #header>
+    <h1>Here might be a page title</h1>
+  </template>
+
+  <p>A paragraph for the main content.</p>
+  <p>And another one.</p>
+
+  <template #footer>
+    <p>Here's some contact info</p>
+  </template>
+</base-layout>
+```
+
+However, just as with other directives, the shorthand is only available when an argument is provided. That means the following syntax is invalid:
+
+```html
+<!-- This will trigger a warning -->
+<current-user #="{ user }">
+  {{ user.firstName }}
+</current-user>
+```
+
+Instead, you must always specify the name of the slot if you wish to use the shorthand:
+
+```html
+<current-user #default="{ user }">
+  {{ user.firstName }}
+</current-user>
+```
+
+## Other Examples
+
+**Slot props allow us to turn slots into reusable templates that can render different content based on input props.** This is most useful when you are designing a reusable component that encapsulates data logic while allowing the consuming parent component to customize part of its layout.
+
+For example, we are implementing a `<todo-list>` component that contains the layout and filtering logic for a list:
+
+```html
+<ul>
+  <li
+    v-for="todo in filteredTodos"
+    v-bind:key="todo.id"
+  >
+    {{ todo.text }}
+  </li>
+</ul>
+```
+
+Instead of hard-coding the content for each todo, we can let the parent component take control by making every todo a slot, then binding `todo` as a slot prop:
+
+```html
+<ul>
+  <li
+    v-for="todo in filteredTodos"
+    v-bind:key="todo.id"
+  >
+    <!--
+    We have a slot for each todo, passing it the
+    `todo` object as a slot prop.
+    -->
+    <slot name="todo" v-bind:todo="todo">
+      <!-- Fallback content -->
+      {{ todo.text }}
+    </slot>
+  </li>
+</ul>
+```
+
+Now when we use the `<todo-list>` component, we can optionally define an alternative `<template>` for todo items, but with access to data from the child:
+
+```html
+<todo-list v-bind:todos="todos">
+  <template v-slot:todo="{ todo }">
+    <span v-if="todo.isComplete">✓</span>
+    {{ todo.text }}
+  </template>
+</todo-list>
+```
+
+However, even this barely scratches the surface of what scoped slots are capable of. For real-life, powerful examples of scoped slot usage, we recommend browsing libraries such as **Vue Virtual Scroller**, **Vue Promised**, and **Portal Vue**.
+
+## Deprecated Syntax
+
+>The `v-slot` directive was introduced in Vue 2.6.0, offering an improved, alternative API to the still-supported `slot` and `slot-scope` attributes. The full rationale for introducing `v-slot` is described in this RFC. The `slot` and `slot-scope` attributes will continue to be supported in all future 2.x releases, but are officially deprecated and will eventually be removed in Vue 3.
+
+### Named Slots with the `slot` Attribute
+
+>Deprecated in 2.6.0+. See here for the new, recommended syntax.
+
+To pass content to named slots from the parent, use the special `slot` attribute on `<template>` (using the `<base-layout>` component described here as example):
+
+```html
+<base-layout>
+  <template slot="header">
+    <h1>Here might be a page title</h1>
+  </template>
+
+  <p>A paragraph for the main content.</p>
+  <p>And another one.</p>
+
+  <template slot="footer">
+    <p>Here's some contact info</p>
+  </template>
+</base-layout>
+```
+
+Or, the slot attribute can also be used directly on a normal element:
+
+```html
+<base-layout>
+  <h1 slot="header">Here might be a page title</h1>
+
+  <p>A paragraph for the main content.</p>
+  <p>And another one.</p>
+
+  <p slot="footer">Here's some contact info</p>
+</base-layout>
+```
+
+There can still be one unnamed slot, which is the default slot that serves as a catch-all for any unmatched content. In both examples above, the rendered HTML would be:
+
+```html
+<div class="container">
+  <header>
+    <h1>Here might be a page title</h1>
+  </header>
+  <main>
+    <p>A paragraph for the main content.</p>
+    <p>And another one.</p>
+  </main>
+  <footer>
+    <p>Here's some contact info</p>
+  </footer>
+</div>
+```
+
+### Scoped Slots with the `slot-scope` Attribute
+
+Deprecated in 2.6.0+. See here for the new, recommended syntax.
+
+To receive props passed to a slot, the parent component can use `<template>` with the `slot-scope` attribute (using the `<slot-example>` described here as example):
+
+```html
+<slot-example>
+  <template slot="default" slot-scope="slotProps">
+    {{ slotProps.msg }}
+  </template>
+</slot-example>
+```
+
+Here, `slot-scope` declares the received props object as the `slotProps` variable, and makes it available inside the `<template>` scope. You can name `slotProps` anything you like similar to naming function arguments in JavaScript.
+
+Here slot="default" can be omitted as it is implied:
+
+```html
+<slot-example>
+  <template slot-scope="slotProps">
+    {{ slotProps.msg }}
+  </template>
+</slot-example>
+```
+
+The `slot-scope` attribute can also be used directly on a non-`<template>` element (including components):
+
+```html
+<slot-example>
+  <span slot-scope="slotProps">
+    {{ slotProps.msg }}
+  </span>
+</slot-example>
+```
+
+The value of slot-scope can accept any valid JavaScript expression that can appear in the argument position of a function definition. This means in supported environments (single-file components or modern browsers) you can also use ES2015 destructuring in the expression, like so:
+
+```html
+<slot-example>
+  <span slot-scope="{ msg }">
+    {{ msg }}
+  </span>
+</slot-example>
+```
+
+Using the `<todo-list>` described here as an example, here’s the equivalent usage using slot-scope:
+
+```html
+<todo-list v-bind:todos="todos">
+  <template slot="todo" slot-scope="{ todo }">
+    <span v-if="todo.isComplete">✓</span>
+    {{ todo.text }}
+  </template>
+</todo-list>
+```
