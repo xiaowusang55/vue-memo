@@ -10,3 +10,272 @@ In most cases, it’s best to avoid reaching into other component instances or m
 
 ### Accessing the Root Instance
 
+n every subcomponent of a `new Vue` instance, this root instance can be accessed with the `$root` property. For example, in this root instance:
+
+```js
+// The root Vue instance
+new Vue({
+  data: {
+    foo: 1
+  },
+  computed: {
+    bar: function () { /* ... */ }
+  },
+  methods: {
+    baz: function () { /* ... */ }
+  }
+})
+```
+
+All subcomponents will now be able to access this instance and use it as a global store:
+
+```js
+// Get root data
+this.$root.foo
+
+// Set root data
+this.$root.foo = 2
+
+// Access root computed properties
+this.$root.bar
+
+// Call root methods
+this.$root.baz()
+```
+
+>This can be convenient for demos or very small apps with a handful of components. However, the pattern does not scale well to medium or large-scale applications, so we strongly recommend using **Vuex** to manage state in most cases.
+
+### Accessing the Parent Component Instance
+
+Similar to $root, the $parent property can be used to access the parent instance from a child. This can be tempting to reach for as a lazy alternative to passing data with a prop.
+
+>In most cases, reaching into the parent makes your application more difficult to debug and understand, especially if you mutate data in the parent. When looking at that component later, it will be very difficult to figure out where that mutation came from.
+
+There are cases however, particularly shared component libraries, when this might be appropriate. For example, in abstract components that interact with JavaScript APIs instead of rendering HTML, like these hypothetical Google Maps components:
+
+```html
+<google-map>
+  <google-map-markers v-bind:places="iceCreamShops"></google-map-markers>
+</google-map>
+```
+
+The `<google-map>` component might define a `map` property that all subcomponents need access to. In this case `<google-map-markers>` might want to access that map with something like `this.$parent.getMap`, in order to add a set of markers to it. You can see this pattern in action here.
+
+Keep in mind, however, that components built with this pattern are still inherently fragile. For example, imagine we add a new `<google-map-region>` component and when `<google-map-markers>` appears within that, it should only render markers that fall within that region:
+
+```html
+<google-map>
+  <google-map-region v-bind:shape="cityBoundaries">
+    <google-map-markers v-bind:places="iceCreamShops"></google-map-markers>
+  </google-map-region>
+</google-map>
+```
+
+Then inside `<google-map-markers>` you might find yourself reaching for a hack like this:
+
+```js
+var map = this.$parent.map || this.$parent.$parent.map
+```
+
+This has quickly gotten out of hand. That’s why to provide context information to descendent components arbitrarily deep, we instead recommend dependency injection.
+
+### Accessing Child Component Instance & Child Elements
+
+Despite the existence of props and events, sometimes you might still need to directly access a child component in JavaScript. To achieve this you can assign a reference ID to the child component using the `ref` attribute. For exampl
+
+```html
+<base-input ref="usernameInput"></base-input>
+```
+
+Now in the component where you’ve defined this `ref`, you can use:
+
+```js
+this.$refs.usernameInput
+```
+
+to access the `<base-input>` instance. This may be useful when you want to, for example, programmatically focus this input from a parent. In that case, the `<base-input>` component may similarly use a `ref` to provide access to specific elements inside it, such as:
+
+```js
+<input ref="input">
+```
+
+And even define methods for use by the parent:
+
+```js
+methods: {
+  // Used to focus the input from the parent
+  focus: function () {
+    this.$refs.input.focus()
+  }
+}
+```
+
+Thus allowing the parent component to focus the input inside `<base-input>` with:
+
+```js
+this.$refs.usernameInput.focus()
+```
+
+When ref is used together with v-for, the ref you get will be an array containing the child components mirroring the data source.
+
+>$refs are only populated after the component has been rendered, and they are not reactive. It is only meant as an escape hatch for direct child manipulation - you should avoid accessing $refs from within templates or computed properties.
+
+### Dependency Injection
+
+Earlier, when we described Accessing the Parent Component Instance, we showed an example like this:
+
+```html
+<google-map>
+  <google-map-region v-bind:shape="cityBoundaries">
+    <google-map-markers v-bind:places="iceCreamShops"></google-map-markers>
+  </google-map-region>
+</google-map>
+```
+
+In this component, all descendants of `<google-map>` needed access to a getMap method, in order to know which map to interact with. Unfortunately, using the $parent property didn’t scale well to more deeply nested components. That’s where dependency injection can be useful, using two new instance options: `provide` and `inject`.
+
+The provide options allows us to specify the data/methods we want to provide to descendent components. In this case, that’s the getMap method inside `<google-map>`:
+
+```js
+provide: function () {
+  return {
+    getMap: this.getMap
+  }
+}
+```
+
+Then in any descendants, we can use the `inject` option to receive specific properties we’d like to add to that instance:
+
+```js
+inject: ['getMap']
+```
+
+You can see the full example here. The advantage over using $parent is that we can access getMap in any descendant component, without exposing the entire instance of `<google-map>`. This allows us to more safely keep developing that component, without fear that we might change/remove something that a child component is relying on. The interface between these components remains clearly defined, just as with `props`.
+
+In fact, you can think of dependency injection as sort of “long-range props”, except:
+
+* ancestor components don’t need to know which descendants use the properties it provides
+* descendant components don’t need to know where injected properties are coming from
+
+>However, there are downsides to dependency injection. It couples components in your application to the way they’re currently organized, making refactoring more difficult. Provided properties are also not reactive. This is by design, because using them to create a central data store scales just as poorly as using `$root` for the same purpose. If the properties you want to share are specific to your app, rather than generic, or if you ever want to update provided data inside ancestors, then that’s a good sign that you probably need a real state management solution like Vuex instead.
+
+** Programmatic Event Listener
+
+So far, you’ve seen uses of `$emit`, listened to with `v-on`, but Vue instances also offer other methods in its events interface. We can:
+
+* Listen for an event with $on(eventName, eventHandler)
+* Listen for an event only once  with $once(eventName, eventHandler)
+* Stop listening for an event with $off(eventName, eventHandler)
+
+You normally won’t have to use these, but they’re available for cases when you need to manually listen for events on a component instance. They can also be useful as a code organization tool. For example, you may often see this pattern for integrating a 3rd-party library:
+
+```js
+// Attach the datepicker to an input once
+// it's mounted to the DOM.
+mounted: function () {
+  // Pikaday is a 3rd-party datepicker library
+  this.picker = new Pikaday({
+    field: this.$refs.input,
+    format: 'YYYY-MM-DD'
+  })
+},
+// Right before the component is destroyed,
+// also destroy the datepicker.
+beforeDestroy: function () {
+  this.picker.destroy()
+}
+```
+
+This has two potential issues:
+
+```js
+mounted: function () {
+  var picker = new Pikaday({
+    field: this.$refs.input,
+    format: 'YYYY-MM-DD'
+  })
+
+  this.$once('hook:beforeDestroy', function () {
+    picker.destroy()
+  })
+}
+```
+
+Using this strategy, we could even use Pikaday with several input elements, with each new instance automatically cleaning up after itself:
+
+```js
+mounted: function () {
+  this.attachDatepicker('startDateInput')
+  this.attachDatepicker('endDateInput')
+},
+methods: {
+  attachDatepicker: function (refName) {
+    var picker = new Pikaday({
+      field: this.$refs[refName],
+      format: 'YYYY-MM-DD'
+    })
+
+    this.$once('hook:beforeDestroy', function () {
+      picker.destroy()
+    })
+  }
+}
+```
+
+See this fiddle for the full code. Note, however, that if you find yourself having to do a lot of setup and cleanup within a single component, the best solution will usually be to create more modular components. In this case, we’d recommend creating a reusable `<input-datepicker>` component.
+
+>Note that Vue’s event system is different from the browser’s EventTarget API. Though they work similarly, $emit, $on, and $off are not aliases for dispatchEvent, addEventListener, and removeEventListener.
+
+## Circular References
+
+### Recursive Components
+
+Components can recursively invoke themselves in their own template. However, they can only do so with the `name` option:
+
+```js
+name: 'unique-name-of-my-component'
+```
+
+When you register a component globally using `Vue.component`, the global ID is automatically set as the component’s `name` option.
+
+```js
+Vue.component('unique-name-of-my-component', {
+  // ...
+})
+```
+
+If you’re not careful, recursive components can also lead to infinite loops:
+
+```js
+name: 'stack-overflow',
+template: '<div><stack-overflow></stack-overflow></div>'
+```
+
+A component like the above will result in a “max stack size exceeded” error, so make sure recursive invocation is conditional (i.e. uses a v-if that will eventually be false).
+
+### Circular References Between Components
+
+Let’s say you’re building a file directory tree, like in Finder or File Explorer. You might have a `tree-folder` component with this template:
+
+```html
+<p>
+  <span>{{ folder.name }}</span>
+  <tree-folder-contents :children="folder.children"/>
+</p>
+```
+
+Then a tree-folder-contents component with this template:
+
+```html
+<ul>
+  <li v-for="child in children">
+    <tree-folder v-if="child.children" :folder="child"/>
+    <span v-else>{{ child.name }}</span>
+  </li>
+</ul>
+```
+
+When you look closely, you’ll see that these components will actually be each other’s descendent and ancestor in the render tree - a paradox! When registering components globally with `Vue.component`, this paradox is resolved for you automatically. If that’s you, you can stop reading here.
+
+However, if you’re requiring/importing components using a module system, e.g. via Webpack or Browserify, you’ll get an error:
+
