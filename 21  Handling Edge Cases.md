@@ -159,7 +159,7 @@ In fact, you can think of dependency injection as sort of “long-range props”
 
 >However, there are downsides to dependency injection. It couples components in your application to the way they’re currently organized, making refactoring more difficult. Provided properties are also not reactive. This is by design, because using them to create a central data store scales just as poorly as using `$root` for the same purpose. If the properties you want to share are specific to your app, rather than generic, or if you ever want to update provided data inside ancestors, then that’s a good sign that you probably need a real state management solution like Vuex instead.
 
-** Programmatic Event Listener
+## Programmatic Event Listener
 
 So far, you’ve seen uses of `$emit`, listened to with `v-on`, but Vue instances also offer other methods in its events interface. We can:
 
@@ -278,4 +278,102 @@ Then a tree-folder-contents component with this template:
 When you look closely, you’ll see that these components will actually be each other’s descendent and ancestor in the render tree - a paradox! When registering components globally with `Vue.component`, this paradox is resolved for you automatically. If that’s you, you can stop reading here.
 
 However, if you’re requiring/importing components using a module system, e.g. via Webpack or Browserify, you’ll get an error:
+
+```sh
+Failed to mount component: template or render function not defined.
+```
+
+To explain what’s happening, let’s call our components A and B. The module system sees that it needs A, but first A needs B, but B needs A, but A needs B, etc. It’s stuck in a loop, not knowing how to fully resolve either component without first resolving the other. To fix this, we need to give the module system a point at which it can say, “A needs B eventually, but there’s no need to resolve B first.”
+
+In our case, let’s make that point the `tree-folder` component. We know the child that creates the paradox is the `tree-folder-contents` component, so we’ll wait until the `beforeCreate` lifecycle hook to register it:
+
+```js
+beforeCreate: function () {
+  this.$options.components.TreeFolderContents = require('./tree-folder-contents.vue').default
+}
+```
+
+Or alternatively, you could use Webpack’s asynchronous `import` when you register the component locally:
+
+```js
+components: {
+  TreeFolderContents: () => import('./tree-folder-contents.vue')
+}
+```
+
+Or alternatively, you could use Webpack’s asynchronous `import` when you register the component locally:
+
+```js
+components: {
+  TreeFolderContents: () => import('./tree-folder-contents.vue')
+}
+```
+
+Problem solved!
+
+## Alternate Template Definitions
+
+### Inline Templates
+
+```html
+<my-component inline-template>
+  <div>
+    <p>These are compiled as the component's own template.</p>
+    <p>Not parent's transclusion content.</p>
+  </div>
+</my-component>
+```
+
+Your inline template needs to be defined inside the DOM element to which Vue is attached.
+
+>However, inline-template makes the scope of your templates harder to reason about. As a best practice, prefer defining templates inside the component using the template option or in a `<template>` element in a .vue file.
+
+### X-Templates
+
+Another way to define templates is inside of a script element with the type `text/x-template`, then referencing the template by an id. For example:
+
+```html
+<script type="text/x-template" id="hello-world-template">
+  <p>Hello hello hello</p>
+</script>
+```
+
+```js
+Vue.component('hello-world', {
+  template: '#hello-world-template'
+})
+```
+
+Your x-template needs to be defined outside the DOM element to which Vue is attached.
+
+>These can be useful for demos with large templates or in extremely small applications, but should otherwise be avoided, because they separate templates from the rest of the component definition.
+
+## Controlling Updates
+
+Thanks to Vue’s Reactivity system, it always knows when to update (if you use it correctly). There are edge cases, however, when you might want to force an update, despite the fact that no reactive data has changed. Then there are other cases when you might want to prevent unnecessary updates.
+
+### Forcing an Update
+
+>If you find yourself needing to force an update in Vue, in 99.99% of cases, you’ve made a mistake somewhere.
+
+You may not have accounted for change detection caveats with arrays or objects, or you may be relying on state that isn’t tracked by Vue’s reactivity system, e.g. with `data`.
+
+However, if you’ve ruled out the above and find yourself in this extremely rare situation of having to manually force an update, you can do so with `$forceUpdate`.
+
+### Cheap Static Components with v-once
+
+Rendering plain HTML elements is very fast in Vue, but sometimes you might have a component that contains **a lot** of static content. In these cases, you can ensure that it’s only evaluated once and then cached by adding the `v-once` directive to the root element, like this:
+
+```js
+Vue.component('terms-of-service', {
+  template: `
+    <div v-once>
+      <h1>Terms of Service</h1>
+      ... a lot of static content ...
+    </div>
+  `
+})
+```
+
+>Once again, try not to overuse this pattern. While convenient in those rare cases when you have to render a lot of static content, it’s simply not necessary unless you actually notice slow rendering – plus, it could cause a lot of confusion later. For example, imagine another developer who’s not familiar with `v-once` or simply misses it in the template. They might spend hours trying to figure out why the template isn’t updating correctly.
 
