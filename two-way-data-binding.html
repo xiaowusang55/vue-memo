@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+
+
+    <div>
+        <h1 id="view"></h1>
+        <input type="text" id="userinput">
+    </div>
+
+
+
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+    <script>
+        let output = document.querySelector('#view'),
+            usrinput = document.querySelector('#userinput');
+
+        let obj = {
+            name: 'ar_lang',
+        }
+
+        output.innerHTML = obj.name;
+
+        //change view from model
+
+        Object.defineProperty(obj, 'name', {
+
+            get() {
+
+                return usrinput.value
+            },
+
+            set(newValue) {
+
+                usrinput.value = newValue;
+                output.innerHTML = newValue;
+            }
+
+        })
+
+
+        //change model from input
+
+        usrinput.oninput = function () {
+
+            obj.name = usrinput.value;
+
+            output.innerHTML = obj.name;
+        }
+
+
+    </script>
+</body>
+
+</html>
