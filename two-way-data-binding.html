@@ -24,9 +24,10 @@
             usrinput = document.querySelector('#userinput');
 
         let obj = {
-            name: 'ar_lang',
+            name: 'fsf',
         }
 
+        usrinput.value = obj.name;
         output.innerHTML = obj.name;
 
         //change view from model
@@ -35,7 +36,7 @@
 
             get() {
 
-                return usrinput.value
+                return usrinput.value;
             },
 
             set(newValue) {
